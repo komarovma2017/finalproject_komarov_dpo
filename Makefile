@@ -1,7 +1,7 @@
 install:
 	poetry install
 project:
-	poetry run project
+	poetry run project main.py
 build:
 	poetry build
 publish:

@@ -265,6 +265,11 @@ None
 
 Komarov_dpo
 
+**Демонстрация работы декораторов:**
+[![asciicast](https://asciinema.org/a/DQ7pO0PQkE7PYf8PFcF4iwIMh.png)](https://asciinema.org/a/DQ7pO0PQkE7PYf8PFcF4iwIMh)
+https://asciinema.org/a/DQ7pO0PQkE7PYf8PFcF4iwIMh
+
+
 ## Дополнительная информация
 
 Для получения дополнительной информации о командах используйте:
