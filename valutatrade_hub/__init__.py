@@ -1,15 +1,4 @@
-"""Основные модули приложения."""
+"""ValutaTrade Hub - Платформа для торговли валютами."""
 
-from valutatrade_hub.core.models import Portfolio, User, Wallet
-from valutatrade_hub.core.usecases import AuthService, PortfolioService, RateService
-from valutatrade_hub.core.utils import DataStorage
+__version__ = "0.1.0"
 
-__all__ = [
-    "User",
-    "Wallet",
-    "Portfolio",
-    "DataStorage",
-    "AuthService",
-    "PortfolioService",
-    "RateService",
-]

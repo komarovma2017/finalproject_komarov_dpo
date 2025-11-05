@@ -1,40 +1,55 @@
 # ValutaTrade Hub
 
-Платформа для отслеживания и симуляции торговли валютами.
+Комплексная платформа для отслеживания и симуляции торговли валютами.
 
 ## Описание
 
-ValutaTrade Hub — это комплексная платформа, которая позволяет пользователям:
-- Регистрироваться и управлять своим виртуальным портфелем
-- Управлять фиатными и криптовалютами
-- Совершать сделки по покупке/продаже
+ValutaTrade Hub позволяет пользователям:
+- Регистрироваться и управлять виртуальным портфелем
+- Совершать сделки по покупке/продаже валют
 - Отслеживать актуальные курсы в реальном времени
+- Получать данные из внешних API (CoinGecko, ExchangeRate-API)
 
-## Структура проекта
+## Архитектура
+
+Проект состоит из двух основных сервисов:
+
+1. **Core Service** - основное приложение с CLI интерфейсом
+2. **Parser Service** - сервис обновления курсов валют
+
+### Структура проекта
 
 ```
-finalproject_<фамилия>_<группа>/
-│
-├── data/                      # Данные приложения
-│   ├── users.json            # Список пользователей
-│   ├── portfolios.json       # Портфели и кошельки
-│   └── rates.json            # Курсы валют
-├── valutatrade_hub/          # Основной пакет
-│   ├── __init__.py
-│   ├── core/                 # Ядро приложения
-│   │   ├── __init__.py
+finalproject_mosyagin_group/
+├── data/                      # Данные в JSON формате
+│   ├── users.json            # Пользователи
+│   ├── portfolios.json       # Портфели
+│   ├── rates.json            # Кеш курсов
+│   └── exchange_rates.json   # История курсов
+├── valutatrade_hub/
+│   ├── core/                 # Основная бизнес-логика
+│   │   ├── currencies.py     # Иерархия валют
+│   │   ├── exceptions.py     # Пользовательские исключения
 │   │   ├── models.py         # Модели данных
-│   │   ├── utils.py          # Вспомогательные функции
-│   │   └── usecases.py       # Бизнес-логика
-│   └── cli/                  # Командный интерфейс
-│       ├── __init__.py
-│       └── interface.py      # CLI команды
+│   │   ├── usecases.py       # Бизнес-логика
+│   │   └── utils.py          # Вспомогательные функции
+│   ├── infra/                # Инфраструктура
+│   │   ├── settings.py       # Singleton настроек
+│   │   └── database.py       # Singleton БД
+│   ├── parser_service/       # Сервис парсинга
+│   │   ├── config.py         # Конфигурация
+│   │   ├── api_clients.py    # API клиенты
+│   │   ├── updater.py        # Обновление курсов
+│   │   ├── storage.py        # Хранилище
+│   │   └── scheduler.py      # Планировщик
+│   ├── cli/                  # CLI интерфейс
+│   │   └── interface.py      # Команды
+│   ├── logging_config.py     # Настройка логов
+│   └── decorators.py         # Декораторы
 ├── main.py                   # Точка входа
-├── Makefile                  # Команды для разработки
-├── poetry.lock
-├── pyproject.toml            # Конфигурация проекта
-├── README.md                 # Документация
-└── .gitignore               # Игнорируемые файлы
+├── pyproject.toml            # Конфигурация Poetry
+├── Makefile                  # Команды для сборки
+└── README.md                 # Документация
 ```
 
 ## Установка
@@ -48,237 +63,214 @@ finalproject_<фамилия>_<группа>/
 
 1. Клонируйте репозиторий:
 ```bash
-git clone <url>
-cd finalproject_<фамилия>_<группа>
+cd finalproject_mosyagin_group
 ```
 
 2. Установите зависимости:
 ```bash
 make install
-# или
-poetry install
 ```
+
+3. (Опционально) Настройте API ключ для ExchangeRate-API:
+```bash
+export EXCHANGERATE_API_KEY="your-api-key-here"
+```
+
+Получить ключ можно на https://www.exchangerate-api.com/
 
 ## Использование
 
 ### Запуск приложения
 
 ```bash
-make run
+make project
 # или
-poetry run python main.py <команда> <аргументы>
+poetry run python main.py
 ```
 
-### Доступные команды
+### Основные команды
 
-#### 1. Регистрация нового пользователя
+#### Регистрация и вход
 
 ```bash
+# Регистрация
 poetry run python main.py register --username alice --password 1234
-```
 
-**Выход:**
-```
-Пользователь 'alice' зарегистрирован (id=1). Войдите: login --username alice --password ****
-```
-
-#### 2. Вход в систему
-
-```bash
+# Вход
 poetry run python main.py login --username alice --password 1234
 ```
 
-**Выход:**
-```
-Вы вошли как 'alice'
-```
-
-#### 3. Показать портфель
+#### Управление портфелем
 
 ```bash
+# Показать портфель
 poetry run python main.py show-portfolio
-# или с указанием базовой валюты
+
+# Показать в другой базовой валюте
 poetry run python main.py show-portfolio --base EUR
 ```
 
-**Выход:**
-```
-Портфель пользователя 'alice' (база: USD):
-- USD: 150.00  → 150.00 USD
-- BTC: 0.0500  → 2,965.00 USD
-- EUR: 200.00  → 214.00 USD
----------------------------------
-ИТОГО: 3,329.00 USD
-```
-
-#### 4. Купить валюту
+#### Торговля
 
 ```bash
+# Купить валюту
 poetry run python main.py buy --currency BTC --amount 0.05
+
+# Продать валюту
+poetry run python main.py sell --currency BTC --amount 0.02
 ```
 
-**Выход:**
-```
-Покупка выполнена: 0.0500 BTC по курсу 59,300.00 USD/BTC
-Изменения в портфеле:
-- BTC: было 0.0000 → стало 0.0500
-Оценочная стоимость покупки: 2,965.00 USD
-```
-
-#### 5. Продать валюту
+#### Курсы валют
 
 ```bash
-poetry run python main.py sell --currency BTC --amount 0.01
+# Получить курс
+poetry run python main.py get-rate --from BTC --to USD
+
+# Обновить курсы из внешних API
+poetry run python main.py update-rates
+
+# Показать кешированные курсы
+poetry run python main.py show-rates
+
+# Показать топ-3 криптовалюты
+poetry run python main.py show-rates --top 3
 ```
 
-**Выход:**
-```
-Продажа выполнена: 0.0100 BTC по курсу 59,800.00 USD/BTC
-Изменения в портфеле:
-- BTC: было 0.0500 → стало 0.0400
-Оценочная выручка: 598.00 USD
-```
-
-#### 6. Получить курс валют
-
-```bash
-poetry run python main.py get-rate --from USD --to BTC
-```
-
-**Выход:**
-```
-Курс USD→BTC: 0.00001685 (обновлено: 2025-10-09 00:03:22)
-Обратный курс BTC→USD: 59,337.21
-```
-
-#### 7. Выход из системы
+#### Справка
 
 ```bash
-poetry run python main.py logout
+poetry run python main.py help
+```
+
+## Поддерживаемые валюты
+
+### Фиатные
+- **USD** - US Dollar (United States)
+- **EUR** - Euro (Eurozone)
+- **GBP** - British Pound (United Kingdom)
+- **RUB** - Russian Ruble (Russian Federation)
+
+### Криптовалюты
+- **BTC** - Bitcoin (SHA-256)
+- **ETH** - Ethereum (Ethash)
+- **SOL** - Solana (PoH)
+
+## Кеш и TTL
+
+Курсы валют кешируются в `data/rates.json` со сроком годности 5 минут (TTL).
+Если курс устарел, система предложит выполнить `update-rates`.
+
+## Parser Service
+
+Parser Service обновляет курсы из двух источников:
+- **CoinGecko** - для криптовалют
+- **ExchangeRate-API** - для фиатных валют
+
+### Обновление курсов
+
+```bash
+# Обновить все курсы
+poetry run python main.py update-rates
+
+# Обновить только из одного источника
+poetry run python main.py update-rates --source coingecko
+```
+
+### API ключи
+
+ExchangeRate-API требует ключ. Установите переменную окружения:
+```bash
+export EXCHANGERATE_API_KEY="your-key"
+```
+
+CoinGecko работает без ключа (с ограничениями по количеству запросов).
+
+## Логирование
+
+Все операции логируются в `logs/actions.log` с ротацией файлов:
+- Максимальный размер: 10 MB
+- Количество backup файлов: 5
+
+Формат лога:
+```
+INFO 2025-10-09T12:05:22 BUY user='alice' currency='BTC' amount=0.0500 result=OK
 ```
 
 ## Разработка
 
-### Форматирование кода
-
-```bash
-make format
-# или
-poetry run ruff format .
-```
-
 ### Проверка кода
 
 ```bash
+# Проверка с ruff
 make lint
-# или
-poetry run ruff check .
 ```
 
-### Полная проверка (форматирование + линтинг)
+### Сборка пакета
 
 ```bash
-make check
+# Сборка
+make build
+
+# Публикация (требуется настройка PyPI)
+make publish
+
+# Установка из wheel
+make package-install
 ```
 
-### Очистка временных файлов
+### Очистка
 
 ```bash
 make clean
 ```
 
-## Архитектура
+## Технические детали
 
-### Модели данных (models.py)
+### Паттерны проектирования
 
-- **User**: Управление пользователями с безопасным хешированием паролей
-- **Wallet**: Кошелек для отдельной валюты с операциями пополнения/снятия
-- **Portfolio**: Управление всеми кошельками пользователя
+1. **Singleton** - используется для `SettingsLoader` и `DatabaseManager`
+2. **ABC (Abstract Base Class)** - иерархия валют и API клиентов
+3. **Factory** - фабрика валют `get_currency()`
+4. **Decorator** - `@log_action` для логирования операций
 
-### Бизнес-логика (usecases.py)
+### Безопасность
 
-- **AuthService**: Аутентификация и управление сессиями
-- **PortfolioService**: Операции с портфелями (покупка/продажа)
-- **RateService**: Получение курсов валют
-
-### Утилиты (utils.py)
-
-- **DataStorage**: Работа с JSON-хранилищем
-- Валидаторы и форматеры
-
-### CLI (interface.py)
-
-- Командный интерфейс для взаимодействия с приложением
-- Парсинг аргументов и выполнение команд
-
-## Примеры использования
-
-### Сценарий 1: Новый пользователь
-
-```bash
-# Регистрация
-poetry run python main.py register --username bob --password securepass
-
-# Вход
-poetry run python main.py login --username bob --password securepass
-
-# Покупка BTC
-poetry run python main.py buy --currency BTC --amount 0.1
-
-# Покупка EUR
-poetry run python main.py buy --currency EUR --amount 500
-
-# Просмотр портфеля
-poetry run python main.py show-portfolio
-```
-
-### Сценарий 2: Проверка курсов
-
-```bash
-# Курс Bitcoin к доллару
-poetry run python main.py get-rate --from BTC --to USD
-
-# Курс евро к доллару
-poetry run python main.py get-rate --from EUR --to USD
-
-# Курс рубля к доллару
-poetry run python main.py get-rate --from RUB --to USD
-```
-
-## Обработка ошибок
-
-Приложение обрабатывает следующие типы ошибок:
-
-- **Ошибки аутентификации**: неверный пароль, пользователь не найден
-- **Ошибки валидации**: пустые поля, некорректные суммы
-- **Ошибки портфеля**: недостаточно средств, отсутствие кошелька
-- **Ошибки курсов**: недоступные валютные пары
-
-## Хранение данных
-
-Данные хранятся в JSON-файлах в директории `data/`:
-
-- `users.json`: информация о пользователях
-- `portfolios.json`: портфели и кошельки
-- `rates.json`: актуальные курсы валют
-
-## Безопасность
-
-- Пароли хешируются с использованием SHA-256 и уникальной соли
-- Соль генерируется для каждого пользователя отдельно
+- Пароли хешируются с использованием SHA-256 + соль
+- Соль генерируется уникально для каждого пользователя
 - Пароли никогда не хранятся в открытом виде
 
-## Следующие этапы
+### Хранение данных
 
-- [ ] Реализация Parser Service для получения курсов из внешних API
-- [ ] Добавление истории транзакций
-- [ ] Реализация графического интерфейса
-- [ ] Интеграция с реальными биржами
+Данные хранятся в JSON файлах с атомарной записью (через временный файл).
+
+### Обработка ошибок
+
+Система использует пользовательские исключения:
+- `InsufficientFundsError` - недостаточно средств
+- `CurrencyNotFoundError` - неизвестная валюта
+- `ApiRequestError` - ошибка API
+
+## Требования к коду
+
+- Соответствие PEP8 (проверка через ruff)
+- Максимальная длина строки: 86 символов
+- Docstrings для всех публичных функций и классов
+- Логирование всех критических операций
 
 ## Лицензия
 
-MIT
+None
 
 ## Автор
 
-<Ваше имя> (<ваша группа>)
+Komarov_dpo
+
+## Дополнительная информация
+
+Для получения дополнительной информации о командах используйте:
+```bash
+poetry run python main.py help
+```
+
+Если возникли проблемы с API, проверьте логи в `logs/actions.log`.
+

@@ -1,5 +1,2 @@
-"""CLI модули."""
+"""Командный интерфейс приложения."""
 
-from valutatrade_hub.cli.interface import CLI, main
-
-__all__ = ["CLI", "main"]
